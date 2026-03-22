@@ -1,4 +1,5 @@
-import "dotenv/config";
+import dotenv from "dotenv";
+dotenv.config();
 
 export const rpcUrl: string = process.env.RPC_URL ?? "";
 export const privateKey: string = process.env.PRIVATE_KEY ?? "";
