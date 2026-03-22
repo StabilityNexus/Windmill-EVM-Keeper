@@ -1,13 +1,13 @@
 import { ethers } from "ethers";
-import { config } from "./config";
+import { rpcUrl, privateKey, pollInterval } from "./config";
 
 export class Keeper {
   private provider: ethers.JsonRpcProvider;
   private wallet: ethers.Wallet;
 
   constructor() {
-    this.provider = new ethers.JsonRpcProvider(config.rpcUrl);
-    this.wallet = new ethers.Wallet(config.privateKey, this.provider);
+    this.provider = new ethers.JsonRpcProvider(rpcUrl);
+    this.wallet = new ethers.Wallet(privateKey, this.provider);
   }
 
   public async start(): Promise<void> {
@@ -22,7 +22,7 @@ export class Keeper {
       } catch (error) {
         console.error("Error during keeper execution:", error);
       }
-      await new Promise<void>((resolve) => setTimeout(resolve, config.pollInterval));
+      await new Promise<void>((resolve) => setTimeout(resolve, pollInterval));
     }
   }
 
