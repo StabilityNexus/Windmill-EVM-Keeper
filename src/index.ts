@@ -1,11 +1,16 @@
-import { Keeper } from "./keeper";
+import { pollInterval, rpcUrl, windmillAddress } from "./config";
+import { scanAndMatch } from "./matcher";
 
-async function main() {
-  const keeper = new Keeper();
-  await keeper.start();
-}
+console.log("Windmill EVM Keeper starting...");
+console.log(`RPC:      ${rpcUrl}`);
+console.log(`Contract: ${windmillAddress}`);
+console.log(`Interval: ${pollInterval}ms`);
 
-main().catch((err) => {
-  console.error("Fatal error:", err);
-  process.exit(1);
-});
+setInterval(async () => {
+  console.log("Scanning...");
+  try {
+    await scanAndMatch();
+  } catch (err) {
+    console.error("Scan error:", err);
+  }
+}, pollInterval);
