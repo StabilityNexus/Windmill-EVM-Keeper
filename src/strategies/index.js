@@ -1,9 +1,9 @@
-import { createContractTaskTemplateStrategy } from "./contract-task.strategy.js";
+import { createWindmillStrategy } from "./windmill.strategy.js";
 import { createNoopStrategy } from "./noop.strategy.js";
 
 const STRATEGY_FACTORIES = new Map([
   ["noop", createNoopStrategy],
-  ["contract-task-template", createContractTaskTemplateStrategy]
+  ["windmill", createWindmillStrategy]
 ]);
 
 export function listStrategies() {
