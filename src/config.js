@@ -2,6 +2,9 @@ const TRUE_VALUES = new Set(["1", "true", "yes", "y", "on"]);
 const FALSE_VALUES = new Set(["0", "false", "no", "n", "off"]);
 const LOG_LEVELS = new Set(["debug", "info", "warn", "error"]);
 
+/**
+ * @param {string[]} argv
+ */
 function parseCliArgs(argv) {
   const flags = new Set();
   const values = new Map();
@@ -26,6 +29,11 @@ function parseCliArgs(argv) {
   return { flags, values };
 }
 
+/**
+ * @param {unknown} value
+ * @param {boolean} fallback
+ * @returns {boolean}
+ */
 export function parseBoolean(value, fallback) {
   if (value === undefined || value === null || value === "") {
     return fallback;
@@ -43,6 +51,12 @@ export function parseBoolean(value, fallback) {
   throw new Error(`Invalid boolean value: ${value}`);
 }
 
+/**
+ * @param {unknown} value
+ * @param {number} fallback
+ * @param {{ min: number; variable: string }} options
+ * @returns {number}
+ */
 export function parseInteger(value, fallback, { min, variable }) {
   if (value === undefined || value === null || value === "") {
     return fallback;
@@ -62,6 +76,10 @@ export function parseInteger(value, fallback, { min, variable }) {
   return parsed;
 }
 
+/**
+ * @param {string | undefined | null} value
+ * @returns {bigint | null}
+ */
 function parseChainId(value) {
   if (!value) {
     return null;

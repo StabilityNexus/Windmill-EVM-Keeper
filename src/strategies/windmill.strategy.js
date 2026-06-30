@@ -27,13 +27,24 @@ function getPairKey(tokenA, tokenB) {
 }
 
 export function createWindmillStrategy() {
+  /** @type {number | null} */
+  let lastScannedBlock = null;
+
   return {
     name: "windmill",
     requiresSigner: true,
     requiresContract: true,
     abi: WINDMILL_EXCHANGE_ABI,
 
-    async getWorkItems({ now, contract, logger }) {
+    /**
+     * @param {{
+     *   now: number;
+     *   provider: any;
+     *   contract: any;
+     *   logger: any;
+     * }} params
+     */
+    async getWorkItems({ now, provider, contract, logger }) {
       const allMatches = [];
       if (await contract.paused()) {
         logger.warn("Exchange is paused. Skipping cycle.");
@@ -41,17 +52,31 @@ export function createWindmillStrategy() {
       }
 
       // Discover pairs from events
-      const deployBlock = process.env.DEPLOY_BLOCK ? parseInt(process.env.DEPLOY_BLOCK) : 0;
-      const logs = await contract.queryFilter(contract.filters.OrderCreated(), deployBlock);
-      for (const log of logs) {
-        const { tokenIn, tokenOut } = log.args;
-        const key = getPairKey(tokenIn, tokenOut);
-        if (!pairsMap.has(key)) {
-          pairsMap.set(key, {
-            token0: tokenIn.toLowerCase() < tokenOut.toLowerCase() ? tokenIn : tokenOut,
-            token1: tokenIn.toLowerCase() < tokenOut.toLowerCase() ? tokenOut : tokenIn
-          });
+      let deployBlock = 0;
+      if (process.env.DEPLOY_BLOCK !== undefined && process.env.DEPLOY_BLOCK !== "") {
+        const deployBlockStr = process.env.DEPLOY_BLOCK.trim();
+        if (!/^\d+$/.test(deployBlockStr)) {
+          throw new Error(`Invalid DEPLOY_BLOCK: "${process.env.DEPLOY_BLOCK}". Must be a valid non-negative block number.`);
         }
+        deployBlock = parseInt(deployBlockStr, 10);
+      }
+
+      const currentBlock = await provider.getBlockNumber();
+      const startBlock = lastScannedBlock !== null ? lastScannedBlock + 1 : deployBlock;
+
+      if (startBlock <= currentBlock) {
+        const logs = await contract.queryFilter(contract.filters.OrderCreated(), startBlock, currentBlock);
+        for (const log of logs) {
+          const { tokenIn, tokenOut } = log.args;
+          const key = getPairKey(tokenIn, tokenOut);
+          if (!pairsMap.has(key)) {
+            pairsMap.set(key, {
+              token0: tokenIn.toLowerCase() < tokenOut.toLowerCase() ? tokenIn : tokenOut,
+              token1: tokenIn.toLowerCase() < tokenOut.toLowerCase() ? tokenOut : tokenIn
+            });
+          }
+        }
+        lastScannedBlock = currentBlock;
       }
 
       for (const [key, pair] of pairsMap.entries()) {
@@ -113,12 +138,22 @@ export function createWindmillStrategy() {
       return allMatches;
     },
 
+    /**
+     * @param {{
+     *   item: any;
+     *   contract: any;
+     *   logger: any;
+     * }} params
+     */
     async executeWorkItem({ item, contract, logger }) {
       const deadline = Math.floor(Date.now() / 1000) + 60;
       logger.info(`Executing match: buyId=${item.buy.id.toString()}, sellId=${item.sell.id.toString()}`);
       return await contract.matchOrders(item.buy.id, item.sell.id, deadline);
     },
 
+    /**
+     * @param {any} item
+     */
     describeWorkItem(item) {
       return `buyId=${item.buy.id.toString()}, sellId=${item.sell.id.toString()}`;
     }

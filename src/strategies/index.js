@@ -10,6 +10,9 @@ export function listStrategies() {
   return Array.from(STRATEGY_FACTORIES.keys());
 }
 
+/**
+ * @param {string} name
+ */
 export function createStrategy(name) {
   const normalized = name.trim().toLowerCase();
   const factory = STRATEGY_FACTORIES.get(normalized);

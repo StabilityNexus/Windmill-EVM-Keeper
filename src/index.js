@@ -5,6 +5,14 @@ import { KeeperRunner } from "./keeper-runner.js";
 import { createLogger } from "./logger.js";
 import { createStrategy } from "./strategies/index.js";
 
+/**
+ * @param {{
+ *   strategy: { requiresContract: boolean; name: string; abi: ethers.Interface | ethers.InterfaceAbi };
+ *   config: ReturnType<typeof loadConfig>;
+ *   provider: ethers.Provider;
+ *   signer: ethers.Signer | null;
+ * }} params
+ */
 function buildContract({ strategy, config, provider, signer }) {
   if (!strategy.requiresContract) {
     return null;
