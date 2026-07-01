@@ -1,6 +1,10 @@
 import process from "node:process";
 import { setTimeout as sleep } from "node:timers/promises";
 
+/**
+ * @param {any} error
+ * @returns {string}
+ */
 function formatError(error) {
   return (
     error?.shortMessage ??
@@ -11,6 +15,10 @@ function formatError(error) {
   );
 }
 
+/**
+ * @param {any} result
+ * @returns {any}
+ */
 function resolveTransaction(result) {
   if (!result) {
     return null;
@@ -23,6 +31,12 @@ function resolveTransaction(result) {
   return result;
 }
 
+/**
+ * @param {any} strategy
+ * @param {any} item
+ * @param {number} index
+ * @returns {string}
+ */
 function describeItem(strategy, item, index) {
   if (typeof strategy.describeWorkItem === "function") {
     return strategy.describeWorkItem(item);
@@ -36,6 +50,16 @@ function describeItem(strategy, item, index) {
 }
 
 export class KeeperRunner {
+  /**
+   * @param {{
+   *   config: any;
+   *   provider: any;
+   *   signer: any;
+   *   contract: any;
+   *   strategy: any;
+   *   logger: any;
+   * }} params
+   */
   constructor({ config, provider, signer, contract, strategy, logger }) {
     this.config = config;
     this.provider = provider;

@@ -5,6 +5,14 @@ const LEVEL_TO_PRIORITY = {
   error: 40
 };
 
+/**
+ * @typedef {"debug" | "info" | "warn" | "error"} LogLevel
+ */
+
+/**
+ * @param {any} [meta]
+ * @returns {string}
+ */
 function serializeMeta(meta) {
   if (meta === undefined) {
     return "";
@@ -21,9 +29,17 @@ function serializeMeta(meta) {
   }
 }
 
+/**
+ * @param {string} [level]
+ */
 export function createLogger(level = "info") {
-  const threshold = LEVEL_TO_PRIORITY[level] ?? LEVEL_TO_PRIORITY.info;
+  const threshold = LEVEL_TO_PRIORITY[/** @type {LogLevel} */ (level)] ?? LEVEL_TO_PRIORITY.info;
 
+  /**
+   * @param {LogLevel} entryLevel
+   * @param {string} message
+   * @param {any} [meta]
+   */
   function log(entryLevel, message, meta) {
     if (LEVEL_TO_PRIORITY[entryLevel] < threshold) {
       return;
@@ -40,9 +56,25 @@ export function createLogger(level = "info") {
   }
 
   return {
+    /**
+     * @param {string} message
+     * @param {any} [meta]
+     */
     debug: (message, meta) => log("debug", message, meta),
+    /**
+     * @param {string} message
+     * @param {any} [meta]
+     */
     info: (message, meta) => log("info", message, meta),
+    /**
+     * @param {string} message
+     * @param {any} [meta]
+     */
     warn: (message, meta) => log("warn", message, meta),
+    /**
+     * @param {string} message
+     * @param {any} [meta]
+     */
     error: (message, meta) => log("error", message, meta)
   };
 }
