@@ -11,7 +11,7 @@ test("parseBoolean throws on invalid value", () => {
   assert.throws(() => parseBoolean("sometimes", true), /Invalid boolean value/);
 });
 
-test("parseInteger validates integer and minimum", () => {
+test("parseInteger validates integer bounds", () => {
   assert.equal(
     parseInteger("42", 10, { min: 1, variable: "TEST_INTEGER" }),
     42
@@ -19,6 +19,10 @@ test("parseInteger validates integer and minimum", () => {
   assert.throws(
     () => parseInteger("0", 10, { min: 1, variable: "TEST_INTEGER" }),
     /greater than or equal/
+  );
+  assert.throws(
+    () => parseInteger("65536", 0, { min: 0, max: 65535, variable: "TELEMETRY_PORT" }),
+    /less than or equal/
   );
 });
 

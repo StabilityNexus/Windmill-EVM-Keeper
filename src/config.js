@@ -54,10 +54,10 @@ export function parseBoolean(value, fallback) {
 /**
  * @param {unknown} value
  * @param {number} fallback
- * @param {{ min: number; variable: string }} options
+ * @param {{ min: number; max?: number; variable: string }} options
  * @returns {number}
  */
-export function parseInteger(value, fallback, { min, variable }) {
+export function parseInteger(value, fallback, { min, max, variable }) {
   if (value === undefined || value === null || value === "") {
     return fallback;
   }
@@ -70,6 +70,12 @@ export function parseInteger(value, fallback, { min, variable }) {
   if (parsed < min) {
     throw new Error(
       `${variable} must be greater than or equal to ${min}. Received: ${value}`
+    );
+  }
+
+  if (max !== undefined && parsed > max) {
+    throw new Error(
+      `${variable} must be less than or equal to ${max}. Received: ${value}`
     );
   }
 
@@ -126,6 +132,12 @@ export function loadConfig({
     variable: "TX_CONFIRMATIONS"
   });
 
+  const telemetryPort = parseInteger(env.TELEMETRY_PORT, 0, {
+    min: 0,
+    max: 65535,
+    variable: "TELEMETRY_PORT"
+  });
+
   const logLevel = (env.LOG_LEVEL ?? "info").trim().toLowerCase();
   if (!LOG_LEVELS.has(logLevel)) {
     throw new Error(
@@ -144,6 +156,8 @@ export function loadConfig({
     intervalMs,
     maxActionsPerCycle,
     txConfirmations,
-    logLevel
+    logLevel,
+    telemetryPort,
+    telemetryId: (env.TELEMETRY_ID ?? "").trim()
   };
 }
