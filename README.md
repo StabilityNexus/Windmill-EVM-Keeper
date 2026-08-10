@@ -3,18 +3,15 @@
 
 <!-- Organization Logo -->
 <div align="center" style="display: flex; align-items: center; justify-content: center; gap: 16px;">
+  <img alt="Windmill" src="https://raw.githubusercontent.com/StabilityNexus/Windmill-EVM-WebUI/main/public/windmill-logo.svg" width="120">
   <img alt="Stability Nexus" src="public/stability.svg" width="175">
-  <img src="public/todo-project-logo.svg" width="175" />
 </div>
 
 &nbsp;
 
-<!-- Organization Name -->
 <div align="center">
 
-[![Static Badge](https://img.shields.io/badge/Stability_Nexus-/TODO-228B22?style=for-the-badge&labelColor=FFC517)](https://TODO.stability.nexus/)
-
-<!-- Correct deployed url to be added -->
+[![Static Badge](https://img.shields.io/badge/Stability_Nexus-Windmill_Keeper-228B22?style=for-the-badge&labelColor=FFC517)](https://github.com/StabilityNexus/Windmill-EVM-Keeper)
 
 </div>
 
@@ -31,108 +28,54 @@
 <!-- Discord -->
 <a href="https://discord.gg/YzDKeEfWtS">
 <img src="https://img.shields.io/discord/995968619034984528?style=flat&logo=discord&logoColor=white&logoSize=auto&label=Discord&labelColor=5865F2&color=57F287" alt="Discord Badge"/></a>
-&nbsp;&nbsp;
-<!-- Medium -->
-<a href="https://news.stability.nexus/">
-  <img src="https://img.shields.io/badge/Medium-black?style=flat&logo=medium&logoColor=black&logoSize=auto&color=white" alt="Medium Badge"></a>
-&nbsp;&nbsp;
-<!-- LinkedIn -->
-<a href="https://www.linkedin.com/company/stability-nexus/">
-  <img src="https://img.shields.io/badge/LinkedIn-black?style=flat&logo=LinkedIn&logoColor=white&logoSize=auto&color=0A66C2" alt="LinkedIn Badge"></a>
-&nbsp;&nbsp;
-<!-- Youtube -->
-<a href="https://www.youtube.com/@StabilityNexus">
-  <img src="https://img.shields.io/youtube/channel/subscribers/UCZOG4YhFQdlGaLugr_e5BKw?style=flat&logo=youtube&logoColor=white%20&logoSize=auto&labelColor=FF0000&color=FF0000" alt="Youtube Badge"></a>
 </p>
 
 ---
 
 <div align="center">
-<h1>TODO: Project Name</h1>
+<h1>Windmill EVM Keeper</h1>
 </div>
 
-[TODO](https://TODO.stability.nexus/) is a reusable Node.js template for building EVM keeper bots that monitor protocol state and execute automated maintenance transactions safely.
+**Windmill EVM Keeper** is the off-chain automation layer for **Windmill Exchange** — a decentralized on-chain order matching engine. Keeper bots monitor protocol state and execute the automated maintenance and settlement transactions that keep matches flowing, safely and continuously.
+
+Built as a strategy-based Node.js keeper: protocol-specific logic lives in isolated strategy modules, while a hardened runtime handles the production loop (guards, confirmations, error handling, structured logs).
 
 ---
 
 ## Features
 
-- **Strategy-based keeper core**: Keep protocol-specific logic isolated in `src/strategies/`.
+- **Strategy-based keeper core**: protocol logic isolated in `src/strategies/`.
 - **Safe execution controls**: `DRY_RUN`, `MAX_ACTIONS_PER_CYCLE`, `EXPECTED_CHAIN_ID`, and confirmation controls.
-- **Production-friendly runtime**: Graceful loop execution, robust error handling, and structured logs.
-- **CI-ready template**: Unit tests, CI workflow, security audit workflow, and release artifact workflow included.
+- **Production-friendly runtime**: graceful loop execution, robust error handling, and structured logs.
+- **CI-ready**: unit tests, CI workflow, security audit workflow, and release artifact workflow included.
+
+---
+
+## 🔗 Repository Links
+
+1. [Main Repository](https://github.com/StabilityNexus/Windmill-EVM-Keeper)
+2. [Smart Contracts](https://github.com/StabilityNexus/Windmill-EVM-Contracts)
+3. [Web UI](https://github.com/StabilityNexus/Windmill-EVM-WebUI)
 
 ---
 
 ## Tech Stack
 
-### Frontend
-- N/A (headless keeper service)
-
-### Backend
-- Node.js 20+
-- JavaScript (ESM)
-- Ethers.js v6
-- dotenv
-
-### AI/ML (if applicable)
-- N/A
-
-### Blockchain (if applicable)
-- EVM-compatible networks
-- JSON-RPC providers
-- Keeper signer wallet for transaction execution
+| Layer | Technology |
+|---|---|
+| Runtime | Node.js 20+ |
+| Language | JavaScript (ESM) |
+| Blockchain | EVM-compatible networks, Ethers.js v6, JSON-RPC providers |
+| Config | dotenv |
 
 ---
 
 ## Project Checklist
 
-- [x] **The protocol** (if applicable):
-   - [ ] has been described and formally specified in a paper.
-   - [ ] has had its main properties mathematically proven.
-   - [ ] has been formally verified.
-- [x] **The smart contracts** (if applicable):
-   - [ ] were thoroughly reviewed by at least two knights of The Stable Order.
-   - [ ] were deployed to: [Add deployment details]
-- [ ] **The mobile app** (if applicable):
-   - [ ] has an _About_ page containing the Stability Nexus's logo and pointing to the social media accounts of the Stability Nexus.
-   - [ ] is available for download as a release in this repo.
-   - [ ] is available in the relevant app stores.
-- [ ] **The AI/ML components** (if applicable):
-   - [ ] LLM/model selection and configuration are documented.
-   - [ ] Prompts and system instructions are version-controlled.
-   - [ ] Content safety and moderation mechanisms are implemented.
-   - [ ] API keys and rate limits are properly managed.
-
----
-
-## Repository Links
-
-1. [Main Repository](https://github.com/StabilityNexus/TODO-EVM-Keeper)
-2. [Frontend](https://github.com/StabilityNexus/TODO/tree/main/frontend) (if separate)
-3. [Backend](https://github.com/StabilityNexus/TODO/tree/main/backend) (if separate)
-
----
-
-## Architecture Diagram
-
-```text
-+--------------------+
-|  Keeper Scheduler  |
-| (interval / once)  |
-+---------+----------+
-          |
-          v
-+--------------------+        +-------------------------+
-|  Strategy Selector | -----> | Protocol Strategy Logic |
-| (KEEPER_STRATEGY)  |        | (getWorkItems/execute)  |
-+---------+----------+        +------------+------------+
-          |                                |
-          v                                v
-+--------------------+             +--------------------+
-|   Ethers Provider  | <---------> |  Target Contract   |
-+--------------------+             +--------------------+
-```
+- [x] **Protocol monitoring** — strategies scan on-chain state for actionable work items.
+- [x] **Safe execution** — dry-run mode, action caps, chain-id validation.
+- [x] **Automated maintenance** — executes keeper transactions and waits for confirmations.
+- [x] **CI + security workflows** — tests, lint, release artifacts.
 
 ---
 
@@ -145,9 +88,9 @@ Start keeper -> Load config -> Validate chain -> Detect actionable items ->
 
 ### Key User Journeys
 
-1. **Template Setup**
+1. **Setup**
    - Copy `.env.example` to `.env`
-   - Choose strategy
+   - Choose a strategy
    - Configure RPC and contract values
 
 2. **Local Validation**
@@ -176,8 +119,8 @@ Start keeper -> Load config -> Validate chain -> Detect actionable items ->
 #### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/StabilityNexus/TODO-EVM-Keeper.git
-cd TODO-EVM-Keeper
+git clone https://github.com/StabilityNexus/Windmill-EVM-Keeper.git
+cd Windmill-EVM-Keeper
 ```
 
 #### 2. Install Dependencies
@@ -186,7 +129,7 @@ cd TODO-EVM-Keeper
 npm ci
 ```
 
-#### 3. Configure Environment Variables(.env.example)
+#### 3. Configure Environment Variables
 
 Create a `.env` file in the root directory:
 
@@ -203,7 +146,7 @@ DRY_RUN=false
 LOG_LEVEL=info
 ```
 
-Public free RPC options you can use for `RPC_URL`:
+Free public RPC options for `RPC_URL`:
 
 - Base Mainnet (`8453`): `https://mainnet.base.org`
 - Base Sepolia (`84532`): `https://sepolia.base.org`
@@ -225,39 +168,45 @@ npm run start
 npm run start:dry-run
 ```
 
-#### 5. Verify Execution
+#### 5. Test
+
+```bash
+npm test
+```
+
+#### 6. Verify Execution
 
 Check terminal logs for:
+
 - network and signer initialization
 - detected work items
 - executed transactions (or dry-run actions)
 
 ---
 
-## App Screenshots
+## Repository Structure
 
-Keeper runtime log examples (replace with actual screenshots or terminal captures):
-
-|  |  |  |
-|---|---|---|
-| Startup logs | Dry-run cycle logs | Transaction execution logs |
+```text
+.
+├── src/
+│   ├── index.js          # Entry point / CLI args
+│   ├── keeper-runner.js  # Keeper runtime loop
+│   ├── logger.js         # Structured logging
+│   ├── config.js         # Env-based configuration
+│   └── strategies/       # Protocol-specific strategy modules
+├── test/                 # Unit tests (node --test)
+├── public/               # Logos and static assets
+├── CONTRIBUTING.md       # Contribution guidelines
+└── README.md
+```
 
 ---
 
 ## Contributing
 
-Don't forget to star this repository if you find it useful.
+⭐ Don't forget to star this repository if you find it useful. ⭐
 
-Thank you for considering contributing to this project! Contributions are highly appreciated and welcomed. To ensure smooth collaboration, please refer to our [Contribution Guidelines](./CONTRIBUTING.md).
-
----
-
-## Maintainers
-
-TODO: Add maintainer information
-
-- [Maintainer Name](https://github.com/username)
-- [Maintainer Name](https://github.com/username)
+Thank you for considering contributing to this project! Please read our [Contribution Guidelines](./CONTRIBUTING.md) — they cover the mandatory Discord workflow and our AI-use disclosure policy.
 
 ---
 
@@ -268,10 +217,8 @@ See the [LICENSE](LICENSE) file for details.
 
 ---
 
-## Thanks To All Contributors
+## 💪 Thanks To All Contributors
 
-Thanks a lot for spending your time helping TODO grow. Keep rocking.
+[![Contributors](https://contrib.rocks/image?repo=StabilityNexus/Windmill-EVM-Keeper)](https://github.com/StabilityNexus/Windmill-EVM-Keeper/graphs/contributors)
 
-[![Contributors](https://contrib.rocks/image?repo=StabilityNexus/TODO-EVM-Keeper)](https://github.com/StabilityNexus/TODO-EVM-Keeper/graphs/contributors)
-
-© 2025 Stability Nexus
+© Stability Nexus
