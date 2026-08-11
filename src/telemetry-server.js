@@ -4,7 +4,15 @@ import { createServer } from "node:http";
  * Exposes a small, read-only health document for dashboards and monitoring.
  * The endpoint is disabled unless TELEMETRY_PORT is configured.
  *
- * @param {{ port: number; getStatus: () => unknown; logger: any }} params
+ * @param {{
+ *   port: number;
+ *   host?: string;
+ *   getStatus: () => unknown;
+ *   logger: {
+ *     info: (message: string, meta?: unknown) => void;
+ *     error: (message: string, meta?: unknown) => void;
+ *   };
+ * }} params
  */
 export function startTelemetryServer({ port, host = "127.0.0.1", getStatus, logger }) {
   if (!port) return null;
