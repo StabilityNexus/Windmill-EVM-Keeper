@@ -1,3 +1,6 @@
+<!-- Don't delete it -->
+<div name="readme-top"></div>
+
 <!-- Organization Logo -->
 <div align="center" style="display: flex; align-items: center; justify-content: center; gap: 16px;">
   <img alt="Stability Nexus" src="public/stability.svg" width="175">
@@ -5,20 +8,56 @@
 
 &nbsp;
 
+<!-- Organization Name -->
+<div align="center">
+
+[![Static Badge](https://img.shields.io/badge/Stability_Nexus-Windmill_EVM_Keeper-228B22?style=for-the-badge&labelColor=FFC517)](https://stability.nexus/)
+
+</div>
+
+<!-- Organization/Project Social Handles -->
+<p align="center">
+<!-- Telegram -->
+<a href="https://t.me/StabilityNexus">
+<img src="https://img.shields.io/badge/Telegram-black?style=flat&logo=telegram&logoColor=white&logoSize=auto&color=24A1DE" alt="Telegram Badge"/></a>
+&nbsp;&nbsp;
+<!-- X (formerly Twitter) -->
+<a href="https://x.com/StabilityNexus">
+<img src="https://img.shields.io/twitter/follow/StabilityNexus" alt="X (formerly Twitter) Badge"/></a>
+&nbsp;&nbsp;
+<!-- Discord -->
+<a href="https://discord.gg/YzDKeEfWtS">
+<img src="https://img.shields.io/discord/995968619034984528?style=flat&logo=discord&logoColor=white&logoSize=auto&label=Discord&labelColor=5865F2&color=57F287" alt="Discord Badge"/></a>
+&nbsp;&nbsp;
+<!-- Medium -->
+<a href="https://news.stability.nexus/">
+  <img src="https://img.shields.io/badge/Medium-black?style=flat&logo=medium&logoColor=black&logoSize=auto&color=white" alt="Medium Badge"></a>
+&nbsp;&nbsp;
+<!-- LinkedIn -->
+<a href="https://www.linkedin.com/company/stability-nexus/">
+  <img src="https://img.shields.io/badge/LinkedIn-black?style=flat&logo=LinkedIn&logoColor=white&logoSize=auto&color=0A66C2" alt="LinkedIn Badge"></a>
+&nbsp;&nbsp;
+<!-- Youtube -->
+<a href="https://www.youtube.com/@StabilityNexus">
+  <img src="https://img.shields.io/youtube/channel/subscribers/UCZOG4YhFQdlGaLugr_e5BKw?style=flat&logo=youtube&logoColor=white%20&logoSize=auto&labelColor=FF0000&color=FF0000" alt="Youtube Badge"></a>
+</p>
+
+---
+
 <div align="center">
 <h1>Windmill EVM Keeper</h1>
 </div>
 
-**Windmill EVM Keeper** is an automated Node.js keeper bot for the **Windmill Exchange** limit order protocol. It continuously monitors active orders on-chain, tracks Dutch-auction price curves in real-time, identifies matching buy/sell order pairs across liquidity pools, and executes on-chain matching transactions (`matchOrders`).
+**Windmill EVM Keeper** is an automated Node.js keeper bot built for the **Windmill Exchange** limit order protocol. It continuously monitors active limit orders on-chain, tracks Dutch-auction price curves in real-time, identifies matching buy/sell order pairs across liquidity pools, and executes on-chain matching transactions (`matchOrders`).
 
 ---
 
 ## Features
 
-- **Windmill Dutch-Auction Matching**: Scans orders, updates prices dynamically, and pairs matching buyer and seller orders.
+- **Windmill Dutch-Auction Matching**: Scans active limit orders, evaluates dynamic price curves, and pairs matching buyer and seller orders.
 - **Dynamic Pair Discovery**: Automatically discovers active token pairs by scanning `OrderCreated` events starting from `DEPLOY_BLOCK`.
 - **Automated PowerShell Runner (`run_keeper.ps1`)**: One-click setup script that verifies environment variables, installs missing dependencies, and starts the keeper loop.
-- **Execution & Safety Controls**: Built-in support for `DRY_RUN`, `MAX_ACTIONS_PER_CYCLE`, `EXPECTED_CHAIN_ID`, and gas/confirmation settings.
+- **Execution & Safety Controls**: Built-in support for `DRY_RUN`, `MAX_ACTIONS_PER_CYCLE`, `EXPECTED_CHAIN_ID`, and transaction confirmation parameters.
 - **Production Runtime**: Graceful lifecycle management (`SIGINT`/`SIGTERM`), error retry limits, and structured JSON logs.
 
 ---
@@ -172,11 +211,18 @@ DEPLOY_BLOCK=11466622
 
 ---
 
+## Contributing
+
+Thank you for considering contributing to this project! Contributions are highly appreciated and welcomed. To ensure smooth collaboration, please refer to our [Contribution Guidelines](./CONTRIBUTING.md).
+
+---
+
 ## License
 
 This project is licensed under the GNU General Public License v3.0.
 See the [LICENSE](LICENSE) file for details.
 
 © 2026 Stability Nexus
+
 
 
