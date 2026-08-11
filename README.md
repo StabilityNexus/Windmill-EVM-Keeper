@@ -1,6 +1,3 @@
-<!-- Don't delete it -->
-<div name="readme-top"></div>
-
 <!-- Organization Logo -->
 <div align="center" style="display: flex; align-items: center; justify-content: center; gap: 16px;">
   <img alt="Stability Nexus" src="public/stability.svg" width="175">
@@ -8,56 +5,20 @@
 
 &nbsp;
 
-<!-- Organization Name -->
-<div align="center">
-
-[![Static Badge](https://img.shields.io/badge/Stability_Nexus-Windmill_EVM_Keeper-228B22?style=for-the-badge&labelColor=FFC517)](https://stability.nexus/)
-
-</div>
-
-<!-- Organization/Project Social Handles -->
-<p align="center">
-<!-- Telegram -->
-<a href="https://t.me/StabilityNexus">
-<img src="https://img.shields.io/badge/Telegram-black?style=flat&logo=telegram&logoColor=white&logoSize=auto&color=24A1DE" alt="Telegram Badge"/></a>
-&nbsp;&nbsp;
-<!-- X (formerly Twitter) -->
-<a href="https://x.com/StabilityNexus">
-<img src="https://img.shields.io/twitter/follow/StabilityNexus" alt="X (formerly Twitter) Badge"/></a>
-&nbsp;&nbsp;
-<!-- Discord -->
-<a href="https://discord.gg/YzDKeEfWtS">
-<img src="https://img.shields.io/discord/995968619034984528?style=flat&logo=discord&logoColor=white&logoSize=auto&label=Discord&labelColor=5865F2&color=57F287" alt="Discord Badge"/></a>
-&nbsp;&nbsp;
-<!-- Medium -->
-<a href="https://news.stability.nexus/">
-  <img src="https://img.shields.io/badge/Medium-black?style=flat&logo=medium&logoColor=black&logoSize=auto&color=white" alt="Medium Badge"></a>
-&nbsp;&nbsp;
-<!-- LinkedIn -->
-<a href="https://linkedin.com/company/stability-nexus">
-  <img src="https://img.shields.io/badge/LinkedIn-black?style=flat&logo=LinkedIn&logoColor=white&logoSize=auto&color=0A66C2" alt="LinkedIn Badge"></a>
-&nbsp;&nbsp;
-<!-- Youtube -->
-<a href="https://www.youtube.com/@StabilityNexus">
-  <img src="https://img.shields.io/youtube/channel/subscribers/UCZOG4YhFQdlGaLugr_e5BKw?style=flat&logo=youtube&logoColor=white&logoSize=auto&labelColor=FF0000&color=FF0000" alt="Youtube Badge"></a>
-</p>
-
----
-
 <div align="center">
 <h1>Windmill EVM Keeper</h1>
 </div>
 
-**Windmill EVM Keeper** is an automated Node.js keeper bot built for the **Windmill Exchange** limit order protocol. It continuously monitors active limit orders on-chain, tracks Dutch-auction price curves in real-time, identifies matching buy/sell order pairs across liquidity pools, and executes on-chain matching transactions (`matchOrders`).
+**Windmill EVM Keeper** is an automated Node.js keeper bot for the **Windmill Exchange** limit order protocol. It continuously monitors active orders on-chain, tracks Dutch-auction price curves in real-time, identifies matching buy/sell order pairs across liquidity pools, and executes on-chain matching transactions (`matchOrders`).
 
 ---
 
 ## Features
 
-- **Windmill Dutch-Auction Matching**: Scans active limit orders, evaluates dynamic price curves, and pairs matching buyer and seller orders.
+- **Windmill Dutch-Auction Matching**: Scans orders, updates prices dynamically, and pairs matching buyer and seller orders.
 - **Dynamic Pair Discovery**: Automatically discovers active token pairs by scanning `OrderCreated` events starting from `DEPLOY_BLOCK`.
 - **Automated PowerShell Runner (`run_keeper.ps1`)**: One-click setup script that verifies environment variables, installs missing dependencies, and starts the keeper loop.
-- **Execution & Safety Controls**: Built-in support for `DRY_RUN`, `MAX_ACTIONS_PER_CYCLE`, `EXPECTED_CHAIN_ID`, and transaction confirmation parameters.
+- **Execution & Safety Controls**: Built-in support for `DRY_RUN`, `MAX_ACTIONS_PER_CYCLE`, `EXPECTED_CHAIN_ID`, and gas/confirmation settings.
 - **Production Runtime**: Graceful lifecycle management (`SIGINT`/`SIGTERM`), error retry limits, and structured JSON logs.
 
 ---
@@ -91,13 +52,6 @@
 +-------------------------+        +------------------------------+
 ```
 
----
-
-## Is Docker Required?
-
-**No, Docker is NOT required.**
-
-The keeper is a lightweight native Node.js application. You can run it directly on Windows, Linux, or macOS with standard Node.js (v20+). Docker can optionally be used if container deployment is desired (e.g. AWS ECS/Kubernetes), but it is completely optional.
 
 ---
 
@@ -126,102 +80,49 @@ DEPLOY_BLOCK=11466622
 
 ---
 
-### Command Guide (PowerShell & CMD)
+### Starting the Keeper
 
-#### 📍 Step 1: Navigate to the Directory
+#### Option 1: Direct Node Command (Recommended for standard execution)
+Navigate to the keeper directory and start the process:
 
-- **PowerShell**:
-  ```powershell
-  cd c:\Users\Hp\Windmill-EVM-Contracts\Windmill-EVM-Keeper2
-  ```
-- **Command Prompt (CMD)**:
-  ```cmd
-  cd /d c:\Users\Hp\Windmill-EVM-Contracts\Windmill-EVM-Keeper2
-  ```
+```powershell
+cd Windmill-EVM-Keeper2
+node src/index.js
+```
 
----
+#### Option 2: Automated PowerShell Script (`run_keeper.ps1`)
+On Windows, use the helper script to auto-check `.env`, auto-install `node_modules`, and launch:
 
-#### 🚀 Command 1: Continuous Production Loop (Standard Run)
-> **When to run:** When you want the keeper bot to run indefinitely, scanning the order book every 15 seconds and automatically submitting on-chain matching transactions.
+```powershell
+cd Windmill-EVM-Keeper2
+.\run_keeper.ps1
+```
 
-- **PowerShell**:
-  ```powershell
-  node src/index.js
-  ```
-- **Command Prompt (CMD)**:
-  ```cmd
-  node src/index.js
-  ```
+#### Option 3: Dry-Run / Simulation Mode
+Run a safe test cycle without sending live transactions or spending gas:
 
----
+```powershell
+node src/index.js --dry-run
+```
 
-#### ⚡ Command 2: Automated Helper Script (`run_keeper.ps1`)
-> **When to run:** On initial setup, after a fresh clone, or when you want an automated script to verify your `.env` configuration, auto-install missing `node_modules`, and launch the keeper.
+#### Option 4: Single Cycle Execution
+Run a single scan-and-match cycle and exit:
 
-- **PowerShell**:
-  ```powershell
-  .\run_keeper.ps1
-  ```
-- **Command Prompt (CMD)**:
-  ```cmd
-  powershell -ExecutionPolicy Bypass -File .\run_keeper.ps1
-  ```
+```powershell
+node src/index.js --once
+```
 
----
-
-#### 🧪 Command 3: Simulation / Dry-Run Mode
-> **When to run:** When testing your setup, verifying RPC connections, or inspecting matching order pairs without spending Sepolia ETH gas or broadcasting live on-chain transactions.
-
-- **PowerShell**:
-  ```powershell
-  node src/index.js --dry-run
-  ```
-- **Command Prompt (CMD)**:
-  ```cmd
-  node src/index.js --dry-run
-  ```
-
----
-
-#### ⏱️ Command 4: Single-Cycle Execution (`--once`)
-> **When to run:** When executing a single scan-and-match cycle (ideal for cron jobs, scheduled tasks, or quick sanity checks) and immediately exiting after completion.
-
-- **PowerShell**:
-  ```powershell
-  node src/index.js --once
-  ```
-- **Command Prompt (CMD)**:
-  ```cmd
-  node src/index.js --once
-  ```
-
----
-
-#### 🧪 Command 5: Run Unit Test Suite
-> **When to run:** Before deploying code changes or after updating strategy logic to verify that all 10 unit tests pass.
-
-- **PowerShell**:
-  ```powershell
-  cmd /c npm test
-  ```
-- **Command Prompt (CMD)**:
-  ```cmd
-  npm test
-  ```
-
----
-
-## Contributing
-
-Thank you for considering contributing to this project! Contributions are highly appreciated and welcomed. To ensure smooth collaboration, please refer to our [Contribution Guidelines](./CONTRIBUTING.md).
+#### Option 5: Running Unit Tests
+```cmd
+cmd /c npm test
+```
 
 ---
 
 ## License
 
+This project is licensed under the GNU General Public License v3.0.
 See the [LICENSE](LICENSE) file for details.
 
 © 2026 Stability Nexus
-
-
 
