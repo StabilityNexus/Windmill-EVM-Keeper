@@ -87,42 +87,88 @@ DEPLOY_BLOCK=11466622
 
 ---
 
-### Starting the Keeper
+### Command Guide (PowerShell & CMD)
 
-#### Option 1: Direct Node Command (Recommended for standard execution)
-Navigate to the keeper directory and start the process:
+#### 📍 Step 1: Navigate to the Directory
 
-```powershell
-cd Windmill-EVM-Keeper2
-node src/index.js
-```
+- **PowerShell**:
+  ```powershell
+  cd c:\Users\Hp\Windmill-EVM-Contracts\Windmill-EVM-Keeper2
+  ```
+- **Command Prompt (CMD)**:
+  ```cmd
+  cd /d c:\Users\Hp\Windmill-EVM-Contracts\Windmill-EVM-Keeper2
+  ```
 
-#### Option 2: Automated PowerShell Script (`run_keeper.ps1`)
-On Windows, use the helper script to auto-check `.env`, auto-install `node_modules`, and launch:
+---
 
-```powershell
-cd Windmill-EVM-Keeper2
-.\run_keeper.ps1
-```
+#### 🚀 Command 1: Continuous Production Loop (Standard Run)
+> **When to run:** When you want the keeper bot to run indefinitely, scanning the order book every 15 seconds and automatically submitting on-chain matching transactions.
 
-#### Option 3: Dry-Run / Simulation Mode
-Run a safe test cycle without sending live transactions or spending gas:
+- **PowerShell**:
+  ```powershell
+  node src/index.js
+  ```
+- **Command Prompt (CMD)**:
+  ```cmd
+  node src/index.js
+  ```
 
-```powershell
-node src/index.js --dry-run
-```
+---
 
-#### Option 4: Single Cycle Execution
-Run a single scan-and-match cycle and exit:
+#### ⚡ Command 2: Automated Helper Script (`run_keeper.ps1`)
+> **When to run:** On initial setup, after a fresh clone, or when you want an automated script to verify your `.env` configuration, auto-install missing `node_modules`, and launch the keeper.
 
-```powershell
-node src/index.js --once
-```
+- **PowerShell**:
+  ```powershell
+  .\run_keeper.ps1
+  ```
+- **Command Prompt (CMD)**:
+  ```cmd
+  powershell -ExecutionPolicy Bypass -File .\run_keeper.ps1
+  ```
 
-#### Option 5: Running Unit Tests
-```cmd
-cmd /c npm test
-```
+---
+
+#### 🧪 Command 3: Simulation / Dry-Run Mode
+> **When to run:** When testing your setup, verifying RPC connections, or inspecting matching order pairs without spending Sepolia ETH gas or broadcasting live on-chain transactions.
+
+- **PowerShell**:
+  ```powershell
+  node src/index.js --dry-run
+  ```
+- **Command Prompt (CMD)**:
+  ```cmd
+  node src/index.js --dry-run
+  ```
+
+---
+
+#### ⏱️ Command 4: Single-Cycle Execution (`--once`)
+> **When to run:** When executing a single scan-and-match cycle (ideal for cron jobs, scheduled tasks, or quick sanity checks) and immediately exiting after completion.
+
+- **PowerShell**:
+  ```powershell
+  node src/index.js --once
+  ```
+- **Command Prompt (CMD)**:
+  ```cmd
+  node src/index.js --once
+  ```
+
+---
+
+#### 🧪 Command 5: Run Unit Test Suite
+> **When to run:** Before deploying code changes or after updating strategy logic to verify that all 10 unit tests pass.
+
+- **PowerShell**:
+  ```powershell
+  cmd /c npm test
+  ```
+- **Command Prompt (CMD)**:
+  ```cmd
+  npm test
+  ```
 
 ---
 
@@ -132,4 +178,5 @@ This project is licensed under the GNU General Public License v3.0.
 See the [LICENSE](LICENSE) file for details.
 
 © 2026 Stability Nexus
+
 
