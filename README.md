@@ -48,128 +48,180 @@
 <h1>Windmill EVM Keeper</h1>
 </div>
 
-Windmill EVM Keeper is a Node.js bot for building EVM keeper bots that monitor protocol state and execute automated maintenance transactions safely. It is specifically configured for the Windmill Exchange matching algorithm.
+**Windmill EVM Keeper** is an automated Node.js keeper bot built for the **Windmill Exchange** limit order protocol. It continuously monitors active limit orders on-chain, tracks Dutch-auction price curves in real-time, identifies matching buy/sell order pairs across liquidity pools, and executes on-chain matching transactions (`matchOrders`).
 
 ---
 
-## 🚀 Features
+## Features
 
-- **Automated Matching**: Continuously monitors the Windmill Exchange for matchable orders and executes them.
-- **O(N log N) Two-Pointer Sweep**: Efficiently matches overlapping orderbooks to minimize gas usage and maximize matches.
-- **Dry-Run & Safety Controls**: Simulate transactions locally before broadcasting to save gas and avoid reverts.
+- **Windmill Dutch-Auction Matching**: Scans active limit orders, evaluates dynamic price curves, and pairs matching buyer and seller orders.
+- **Dynamic Pair Discovery**: Automatically discovers active token pairs by scanning `OrderCreated` events starting from `DEPLOY_BLOCK`.
+- **Automated PowerShell Runner (`run_keeper.ps1`)**: One-click setup script that verifies environment variables, installs missing dependencies, and starts the keeper loop.
+- **Execution & Safety Controls**: Built-in support for `DRY_RUN`, `MAX_ACTIONS_PER_CYCLE`, `EXPECTED_CHAIN_ID`, and transaction confirmation parameters.
+- **Production Runtime**: Graceful lifecycle management (`SIGINT`/`SIGTERM`), error retry limits, and structured JSON logs.
+
+---
+
+## Tech Stack
+
+- **Runtime**: Node.js (>=20)
+- **Library**: Ethers.js v6
+- **Smart Contract Target**: WindmillExchange (`0x96dce657ba9bd3db2533bbee0b2e2dbf334232d2` on Sepolia)
+- **Language**: JavaScript (ESM)
 
 ---
 
 ## Architecture
 
 ```text
-Windmill-EVM-Keeper2/
-├── src/
-│   ├── index.js             # Main entry point
-│   ├── keeper-runner.js     # Keeper loop logic
-│   ├── config.js            # Configuration loader
-│   ├── logger.js            # Structured logging
-│   └── strategies/          # Execution strategies (Windmill strategy)
++-------------------------+
+|     Keeper Runner       |
+| (Continuous Loop/Interval|
++------------+------------+
+             |
+             v
++-------------------------+        +------------------------------+
+| Windmill Strategy Core  | -----> |   WindmillExchange Contract  |
+| (Order Discovery/Match) |        | (getOrdersByPair/matchOrders)|
++------------+------------+        +--------------+---------------+
+             |                                    |
+             v                                    v
++-------------------------+        +------------------------------+
+|   Ethers Provider/Wallet| <----> |        Ethereum Network      |
++-------------------------+        +------------------------------+
 ```
 
 ---
 
-## Tech Stack
+## Is Docker Required?
 
-| Layer | Technology |
-|---|---|
-| Environment | Node.js (v20+) |
-| Web3 Library | ethers.js (v6) |
-| Container | Docker (node:20-alpine) |
+**No, Docker is NOT required.**
+
+The keeper is a lightweight native Node.js application. You can run it directly on Windows, Linux, or macOS with standard Node.js (v20+). Docker can optionally be used if container deployment is desired (e.g. AWS ECS/Kubernetes), but it is completely optional.
 
 ---
 
-## Getting Started
+## Quick Start & Commands
 
 ### Prerequisites
+- Node.js (v20+) installed on your machine
+- Funded EVM Wallet (Sepolia ETH for gas when broadcasting matches)
 
-| Tool | Version | Install |
-|---|---|---|
-| `git` | any | [git-scm.com](https://git-scm.com/) |
-| `node` | 20+ | [nodejs.org](https://nodejs.org/) |
-| `npm` | 10+ | (comes with node) |
-
-### Installation
-
-```bash
-git clone https://github.com/StabilityNexus/Windmill-EVM-Contracts.git
-cd Windmill-EVM-Contracts/Windmill-EVM-Keeper2
-npm install
-```
-
-### Environment Setup
-
-```bash
-cp .env.example .env
-```
-
-Edit `.env` and configure your node:
+### Environment Setup (`.env`)
+Create or edit `.env` in the keeper directory:
 
 ```env
 KEEPER_STRATEGY=windmill
-RPC_URL=https://sepolia.infura.io/v3/YOUR_KEY
 EXPECTED_CHAIN_ID=11155111
-PRIVATE_KEY=0x...
-CONTRACT_ADDRESS=0x...
+RPC_URL=https://ethereum-sepolia-rpc.publicnode.com
+PRIVATE_KEY=0x... (Your Keeper Private Key)
+CONTRACT_ADDRESS=0x96dce657ba9bd3db2533bbee0b2e2dbf334232d2
+TX_CONFIRMATIONS=1
+MAX_ACTIONS_PER_CYCLE=25
 KEEPER_INTERVAL_MS=15000
 DRY_RUN=false
+LOG_LEVEL=info
+DEPLOY_BLOCK=11466622
 ```
 
 ---
 
-## Usage
+### Command Guide (PowerShell & CMD)
 
-### Run Locally
+#### 📍 Step 1: Navigate to the Directory
 
-```bash
-# Test with dry run first (no transactions)
-npm run start:dry-run
-
-# Single cycle test
-npm run start:once
-
-# Production continuous loop
-npm run start
-```
-
-### Run with Docker
-
-```bash
-# Build the image
-docker build -t windmill-evm-keeper .
-
-# Run the container
-docker run -d \
-  --env-file .env \
-  --name keeper \
-  windmill-evm-keeper
-```
+- **PowerShell**:
+  ```powershell
+  cd c:\Users\Hp\Windmill-EVM-Contracts\Windmill-EVM-Keeper2
+  ```
+- **Command Prompt (CMD)**:
+  ```cmd
+  cd /d c:\Users\Hp\Windmill-EVM-Contracts\Windmill-EVM-Keeper2
+  ```
 
 ---
 
-## 🙌 Contributing
+#### 🚀 Command 1: Continuous Production Loop (Standard Run)
+> **When to run:** When you want the keeper bot to run indefinitely, scanning the order book every 15 seconds and automatically submitting on-chain matching transactions.
 
-⭐ Don't forget to star this repository if you find it useful! ⭐
+- **PowerShell**:
+  ```powershell
+  node src/index.js
+  ```
+- **Command Prompt (CMD)**:
+  ```cmd
+  node src/index.js
+  ```
+
+---
+
+#### ⚡ Command 2: Automated Helper Script (`run_keeper.ps1`)
+> **When to run:** On initial setup, after a fresh clone, or when you want an automated script to verify your `.env` configuration, auto-install missing `node_modules`, and launch the keeper.
+
+- **PowerShell**:
+  ```powershell
+  .\run_keeper.ps1
+  ```
+- **Command Prompt (CMD)**:
+  ```cmd
+  powershell -ExecutionPolicy Bypass -File .\run_keeper.ps1
+  ```
+
+---
+
+#### 🧪 Command 3: Simulation / Dry-Run Mode
+> **When to run:** When testing your setup, verifying RPC connections, or inspecting matching order pairs without spending Sepolia ETH gas or broadcasting live on-chain transactions.
+
+- **PowerShell**:
+  ```powershell
+  node src/index.js --dry-run
+  ```
+- **Command Prompt (CMD)**:
+  ```cmd
+  node src/index.js --dry-run
+  ```
+
+---
+
+#### ⏱️ Command 4: Single-Cycle Execution (`--once`)
+> **When to run:** When executing a single scan-and-match cycle (ideal for cron jobs, scheduled tasks, or quick sanity checks) and immediately exiting after completion.
+
+- **PowerShell**:
+  ```powershell
+  node src/index.js --once
+  ```
+- **Command Prompt (CMD)**:
+  ```cmd
+  node src/index.js --once
+  ```
+
+---
+
+#### 🧪 Command 5: Run Unit Test Suite
+> **When to run:** Before deploying code changes or after updating strategy logic to verify that all 10 unit tests pass.
+
+- **PowerShell**:
+  ```powershell
+  cmd /c npm test
+  ```
+- **Command Prompt (CMD)**:
+  ```cmd
+  npm test
+  ```
+
+---
+
+## Contributing
 
 Thank you for considering contributing to this project! Contributions are highly appreciated and welcomed. To ensure smooth collaboration, please refer to our [Contribution Guidelines](./CONTRIBUTING.md).
 
 ---
 
-## 📍 License
+## License
 
 See the [LICENSE](LICENSE) file for details.
 
----
-
-## 💪 Thanks To All Contributors
-
-Thanks a lot for spending your time helping Windmill EVM Keeper grow. Keep rocking!
-
-[![Contributors](https://contrib.rocks/image?repo=StabilityNexus/Windmill-EVM-Contracts)](https://github.com/StabilityNexus/Windmill-EVM-Contracts/graphs/contributors)
-
 © 2026 Stability Nexus
+
+
+

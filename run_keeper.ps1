@@ -3,9 +3,9 @@ $ErrorActionPreference = 'Stop'
 # Navigate to Keeper folder
 $KeeperDir = $PSScriptRoot
 
-Write-Host "════════════════════════════════════════════════════════════════" -ForegroundColor Yellow
+Write-Host "================================================================" -ForegroundColor Yellow
 Write-Host "        STARTING WINDMILL KEEPER NODE ON YOUR MACHINE           " -ForegroundColor Yellow
-Write-Host "════════════════════════════════════════════════════════════════" -ForegroundColor Yellow
+Write-Host "================================================================" -ForegroundColor Yellow
 
 # 1. Setup .env file
 $EnvFile = Join-Path $KeeperDir ".env"
@@ -14,7 +14,7 @@ $ExampleEnvFile = Join-Path $KeeperDir ".env.example"
 if (-not (Test-Path $EnvFile)) {
     Write-Host "[1/3] Creating .env file from .env.example..." -ForegroundColor Cyan
     Copy-Item $ExampleEnvFile $EnvFile
-    Write-Host "✔ Created $EnvFile" -ForegroundColor Green
+    Write-Host "[OK] Created $EnvFile" -ForegroundColor Green
 } else {
     Write-Host "[1/3] Found existing .env file." -ForegroundColor Green
 }
@@ -26,7 +26,7 @@ if (-not (Test-Path $NodeModules)) {
     Push-Location $KeeperDir
     npm install
     Pop-Location
-    Write-Host "✔ Dependencies installed successfully." -ForegroundColor Green
+    Write-Host "[OK] Dependencies installed successfully." -ForegroundColor Green
 } else {
     Write-Host "[2/3] Dependencies already installed." -ForegroundColor Green
 }
@@ -43,7 +43,7 @@ if (-not $HasPk -or -not $HasContract) {
     Write-Host "  - RPC_URL= (E.g. your Sepolia/Base RPC)" -ForegroundColor Yellow
     Write-Host "  - PRIVATE_KEY= (Your keeper wallet private key starting with 0x)" -ForegroundColor Yellow
     Write-Host "  - CONTRACT_ADDRESS= (The deployed WindmillExchange address)" -ForegroundColor Yellow
-    Write-Host "════════════════════════════════════════════════════════════════" -ForegroundColor Yellow
+    Write-Host "================================================================" -ForegroundColor Yellow
     Read-Host "Press ENTER to continue or exit and run again once configured"
 } else {
     Write-Host "[3/3] Config variables are configured." -ForegroundColor Green
@@ -54,3 +54,4 @@ Write-Host "Starting the keeper runner loop..." -ForegroundColor Yellow
 Push-Location $KeeperDir
 node src/index.js
 Pop-Location
+
