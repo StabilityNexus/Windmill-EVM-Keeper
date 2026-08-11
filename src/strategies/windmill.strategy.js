@@ -2,16 +2,11 @@ import { ethers } from "ethers";
 
 const WINDMILL_EXCHANGE_ABI = [
   "function paused() view returns (bool)",
-  "function priceOracle() view returns (address)",
   "function getOrdersByPair(address tokenA, address tokenB, uint256 cursor, uint256 limit) view returns (uint256[])",
-  "function getOrder(uint256 orderId) view returns (tuple(uint256 id, address maker, bool isBuy, bool active, address tokenIn, address tokenOut, uint256 amountIn, uint256 remainingIn, uint256 startPrice, int256 slope, uint256 minPrice, uint256 maxPrice, uint256 createdAt, uint256 expiry, uint8 orderType, uint256 triggerPrice))",
+  "function getOrder(uint256 orderId) view returns (tuple(uint256 id, address maker, bool isBuy, bool active, address tokenIn, address tokenOut, uint256 amountIn, uint256 remainingIn, uint256 startPrice, int256 slope, uint256 minPrice, uint256 maxPrice, uint256 createdAt, uint256 expiry))",
   "function currentPrice(uint256 orderId, uint256 timestamp) view returns (uint256)",
-  "function matchOrders(uint256 buyOrderId, uint256 sellOrderId, uint256 deadline) returns (tuple())",
+  "function matchOrders(uint256 buyOrderId, uint256 sellOrderId, uint256 deadline)",
   "event OrderCreated(uint256 indexed orderId, address indexed maker, address indexed tokenIn, address tokenOut, uint256 amountIn, bool isBuy)"
-];
-
-const ORACLE_ABI = [
-  "function getPrice(address tokenIn, address tokenOut) view returns (uint256)"
 ];
 
 const pairsMap = new Map();
