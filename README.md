@@ -6,33 +6,34 @@
 &nbsp;
 
 <div align="center">
-<h1>Windmill EVM Keeper</h1>
+<h1>Windmill EVM Keeper Bot</h1>
+<p><em>Autonomous order matching daemon for the Windmill dynamic pricing exchange protocol.</em></p>
 </div>
 
 **Windmill EVM Keeper** is an automated Node.js keeper bot for the **Windmill Exchange** limit order protocol. It continuously monitors active orders on-chain, tracks Dutch-auction price curves in real-time, identifies matching buy/sell order pairs across liquidity pools, and executes on-chain matching transactions (`matchOrders`).
 
 ---
 
-## Features
+## ⚡ Features
 
-- **Windmill Dutch-Auction Matching**: Scans orders, updates prices dynamically, and pairs matching buyer and seller orders.
+- **Windmill Dutch-Auction Matching**: Scans orders, updates prices dynamically according to linear slope decay formulas, and pairs matching buyer and seller orders.
 - **Dynamic Pair Discovery**: Automatically discovers active token pairs by scanning `OrderCreated` events starting from `DEPLOY_BLOCK`.
 - **Automated PowerShell Runner (`run_keeper.ps1`)**: One-click setup script that verifies environment variables, installs missing dependencies, and starts the keeper loop.
 - **Execution & Safety Controls**: Built-in support for `DRY_RUN`, `MAX_ACTIONS_PER_CYCLE`, `EXPECTED_CHAIN_ID`, and gas/confirmation settings.
-- **Production Runtime**: Graceful lifecycle management (`SIGINT`/`SIGTERM`), error retry limits, and structured JSON logs.
+- **Production Runtime**: Graceful lifecycle management (`SIGINT`/`SIGTERM`), error retry limits, health checks, and structured JSON logs.
 
 ---
 
-## Tech Stack
+## 🛠️ Tech Stack & Requirements
 
-- **Runtime**: Node.js (>=20)
+- **Runtime**: Node.js (>=20.0.0)
 - **Library**: Ethers.js v6
 - **Smart Contract Target**: WindmillExchange (`0x96dce657ba9bd3db2533bbee0b2e2dbf334232d2` on Sepolia)
 - **Language**: JavaScript (ESM)
 
 ---
 
-## Architecture
+## 🏗️ Architecture & Matching Loop
 
 ```text
 +-------------------------+
@@ -52,23 +53,19 @@
 +-------------------------+        +------------------------------+
 ```
 
-
 ---
 
-## Quick Start & Commands
+## 🚀 Quick Start & Environment Configuration
 
-### Prerequisites
-- Node.js (v20+) installed on your machine
-- Funded EVM Wallet (Sepolia ETH for gas when broadcasting matches)
+### Environment Variables (`.env`)
 
-### Environment Setup (`.env`)
-Create or edit `.env` in the keeper directory:
+Copy `.env.example` to `.env` in the root of `Windmill-EVM-Keeper2`:
 
 ```env
 KEEPER_STRATEGY=windmill
 EXPECTED_CHAIN_ID=11155111
 RPC_URL=https://ethereum-sepolia-rpc.publicnode.com
-PRIVATE_KEY=0x... (Your Keeper Private Key)
+PRIVATE_KEY=0x0000000000000000000000000000000000000000000000000000000000000001
 CONTRACT_ADDRESS=0x96dce657ba9bd3db2533bbee0b2e2dbf334232d2
 TX_CONFIRMATIONS=1
 MAX_ACTIONS_PER_CYCLE=25
@@ -80,49 +77,132 @@ DEPLOY_BLOCK=11466622
 
 ---
 
-### Starting the Keeper
+## 💻 Local Execution & Testing
 
-#### Option 1: Direct Node Command (Recommended for standard execution)
-Navigate to the keeper directory and start the process:
-
-```powershell
-cd Windmill-EVM-Keeper2
-node src/index.js
+### Option 1: Direct Node.js Command
+```bash
+npm start
 ```
 
-#### Option 2: Automated PowerShell Script (`run_keeper.ps1`)
-On Windows, use the helper script to auto-check `.env`, auto-install `node_modules`, and launch:
-
+### Option 2: Automated PowerShell Script (`run_keeper.ps1`)
 ```powershell
-cd Windmill-EVM-Keeper2
 .\run_keeper.ps1
 ```
 
-#### Option 3: Dry-Run / Simulation Mode
-Run a safe test cycle without sending live transactions or spending gas:
-
-```powershell
-node src/index.js --dry-run
+### Option 3: Simulation / Dry-Run Mode
+```bash
+npm run start:dry-run
 ```
 
-#### Option 4: Single Cycle Execution
-Run a single scan-and-match cycle and exit:
-
-```powershell
-node src/index.js --once
+### Option 4: Single Scan Cycle
+```bash
+npm run start:once
 ```
 
-#### Option 5: Running Unit Tests
-```cmd
-cmd /c npm test
+### Option 5: Running Unit Tests
+```bash
+npm test
 ```
 
 ---
 
-## License
+## 🌐 Self-Hosting & Deployment Documentation
+
+### 1. Systemd Service Deployment (Ubuntu / Debian VPS)
+
+To host the keeper bot on a Linux VPS (e.g. Hetzner, DigitalOcean, Linode, AWS EC2):
+
+1. **Install Node.js 20+**:
+   ```bash
+   curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+   sudo apt-get install -y nodejs git
+   ```
+
+2. **Clone & Install Dependencies**:
+   ```bash
+   git clone https://github.com/StabilityNexus/Windmill-EVM-Keeper.git /opt/windmill-keeper
+   cd /opt/windmill-keeper
+   npm install --production
+   cp .env.example .env
+   # Edit .env with your RPC_URL and PRIVATE_KEY
+   ```
+
+3. **Create Systemd Unit (`/etc/systemd/system/windmill-keeper.service`)**:
+   ```ini
+   [Unit]
+   Description=Windmill EVM Keeper Bot
+   After=network.target
+
+   [Service]
+   Type=simple
+   User=root
+   WorkingDirectory=/opt/windmill-keeper
+   ExecStart=/usr/bin/node src/index.js
+   Restart=always
+   RestartSec=10
+   Environment=NODE_ENV=production
+
+   [Install]
+   WantedBy=multi-user.target
+   ```
+
+4. **Enable & Start Service**:
+   ```bash
+   sudo systemctl daemon-reload
+   sudo systemctl enable windmill-keeper
+   sudo systemctl start windmill-keeper
+   sudo systemctl status windmill-keeper
+   ```
+
+---
+
+### 2. PM2 Process Manager Deployment
+
+Alternatively, use PM2 for automatic process monitoring and log rotation:
+
+```bash
+npm install -g pm2
+pm2 start src/index.js --name "windmill-keeper"
+pm2 save
+pm2 startup
+```
+
+---
+
+### 3. Docker & Container Deployment
+
+To run in isolated Docker containers:
+
+#### `Dockerfile`
+```dockerfile
+FROM node:20-alpine
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci --only=production
+COPY . .
+CMD ["node", "src/index.js"]
+```
+
+#### Build & Run Container:
+```bash
+docker build -t windmill-keeper .
+docker run -d --name windmill-keeper --env-file .env --restart unless-stopped windmill-keeper
+```
+
+---
+
+### 4. Dynamic IP & Cloud DNS Configuration
+
+For self-hosted keepers running on residential or dynamic IP servers (e.g., home server, Raspberry Pi):
+
+- **DDNS (Dynamic DNS)**: Use DDNS services like `ddclient`, Cloudflare DDNS, or No-IP to sync dynamic server IP addresses with your DNS hostname.
+- **RPC Failover**: Configure multi-RPC fallbacks in `.env` to ensure continuous connection resilience if public RPC nodes rate-limit your keeper IP.
+
+---
+
+## 📄 License
 
 This project is licensed under the GNU General Public License v3.0.
 See the [LICENSE](LICENSE) file for details.
 
-© 2026 Stability Nexus
-
+© 2026 Stability Nexus & AOSSIE
