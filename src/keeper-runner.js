@@ -137,7 +137,13 @@ export class KeeperRunner {
 
   async runCycle() {
     const cycleStartedAt = Date.now();
-    const now = Math.floor(Date.now() / 1000);
+    let now;
+    try {
+      const latestBlock = await this.provider.getBlock("latest");
+      now = latestBlock ? Number(latestBlock.timestamp) : Math.floor(Date.now() / 1000);
+    } catch {
+      now = Math.floor(Date.now() / 1000);
+    }
 
     const workItems = await this.strategy.getWorkItems({
       now,
