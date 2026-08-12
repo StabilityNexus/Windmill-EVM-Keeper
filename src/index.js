@@ -61,12 +61,16 @@ async function main() {
 
   const telemetryServer = startTelemetryServer({
     port: config.telemetryPort,
+    host: config.telemetryHost,
     getStatus: () => runner.getStatus(),
     logger
   });
-  const shutdownTelemetry = () => stopTelemetryServer(telemetryServer, logger);
-  process.once("SIGINT", shutdownTelemetry);
-  process.once("SIGTERM", shutdownTelemetry);
+  const shutdown = (signal) => {
+    runner.stop(signal);
+    stopTelemetryServer(telemetryServer, logger);
+  };
+  process.once("SIGINT", () => shutdown("SIGINT"));
+  process.once("SIGTERM", () => shutdown("SIGTERM"));
 
   await runner.start();
 }

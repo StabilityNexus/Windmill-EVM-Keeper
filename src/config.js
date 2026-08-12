@@ -158,6 +158,7 @@ export function loadConfig({
     txConfirmations,
     logLevel,
     telemetryPort,
+    telemetryHost: (env.TELEMETRY_HOST ?? "127.0.0.1").trim() || "127.0.0.1",
     telemetryId: (env.TELEMETRY_ID ?? "").trim()
   };
 }

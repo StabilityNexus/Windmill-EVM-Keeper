@@ -1,4 +1,3 @@
-import process from "node:process";
 import { setTimeout as sleep } from "node:timers/promises";
 
 /**
@@ -69,7 +68,6 @@ export class KeeperRunner {
     this.logger = logger;
 
     this.stopped = false;
-    this.signalHandlersInstalled = false;
     this.consecutiveFailures = 0;
     this.startedAt = null;
     this.chainId = null;
@@ -85,8 +83,6 @@ export class KeeperRunner {
       await this.runCycle();
       return;
     }
-
-    this.installSignalHandlers();
 
     while (!this.stopped) {
       const cycleStart = Date.now();
@@ -215,6 +211,7 @@ export class KeeperRunner {
         succeeded += 1;
       } catch (error) {
         failed += 1;
+        this.lastError = formatError(error);
         this.logger.warn("Work item execution failed", {
           item: itemLabel,
           error: formatError(error)
@@ -243,15 +240,29 @@ export class KeeperRunner {
       elapsedMs: Date.now() - cycleStartedAt,
       completedAt: new Date().toISOString()
     };
-    this.lastError = null;
+    if (failed === 0) {
+      this.lastError = null;
+    }
   }
 
   getStatus() {
+    const hasCompleteWorkItemFailure =
+      this.lastCycle !== null &&
+      this.lastCycle.processed > 0 &&
+      this.lastCycle.succeeded === 0 &&
+      this.lastCycle.failed > 0;
+    const uptimeSeconds = this.startedAt
+      ? Math.floor((Date.now() - Date.parse(this.startedAt)) / 1000)
+      : 0;
+
     return {
       id: this.config.telemetryId || this.signer?.address || "keeper",
       address: this.signer?.address ?? null,
       chainId: this.chainId,
       startedAt: this.startedAt,
+      stopped: this.stopped,
+      uptimeSeconds,
+      isHealthy: !this.stopped && this.consecutiveFailures < 3 && !hasCompleteWorkItemFailure,
       consecutiveFailures: this.consecutiveFailures,
       lastError: this.lastError,
       lastCycle: this.lastCycle
@@ -267,13 +278,4 @@ export class KeeperRunner {
     this.logger.warn("Stopping keeper", { reason });
   }
 
-  installSignalHandlers() {
-    if (this.signalHandlersInstalled) {
-      return;
-    }
-
-    this.signalHandlersInstalled = true;
-    process.on("SIGINT", () => this.stop("SIGINT"));
-    process.on("SIGTERM", () => this.stop("SIGTERM"));
-  }
 }

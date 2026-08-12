@@ -19,17 +19,19 @@ export function startTelemetryServer({ port, host = "127.0.0.1", getStatus, logg
 
   const server = createServer((request, response) => {
     try {
-      if (request.method !== "GET" || request.url !== "/health") {
+      const pathname = new URL(request.url ?? "/", "http://localhost").pathname;
+      if (request.method !== "GET" || pathname !== "/health") {
         response.writeHead(404, { "content-type": "application/json" });
         response.end(JSON.stringify({ error: "Not found" }));
         return;
       }
 
-      response.writeHead(200, {
+      const status = getStatus();
+      response.writeHead(status.isHealthy === false || status.stopped === true ? 503 : 200, {
         "content-type": "application/json",
         "cache-control": "no-store"
       });
-      response.end(JSON.stringify(getStatus()));
+      response.end(JSON.stringify(status, (_, value) => typeof value === "bigint" ? value.toString() : value));
     } catch (error) {
       logger.error("Keeper telemetry request failed", {
         error: error instanceof Error ? error.message : String(error)
@@ -54,6 +56,7 @@ export function startTelemetryServer({ port, host = "127.0.0.1", getStatus, logg
 
 export function stopTelemetryServer(server, logger) {
   if (!server?.listening) return;
+  server.closeIdleConnections?.();
   server.close((error) => {
     if (error) {
       logger.error("Keeper telemetry server shutdown failed", { error: error.message });

@@ -24,11 +24,12 @@ test("loadConfig reads defaults", () => {
 
 test("loadConfig validates telemetry settings", () => {
   const configured = loadConfig({
-    env: { TELEMETRY_PORT: "65535", TELEMETRY_ID: "  primary-keeper  " },
+    env: { TELEMETRY_PORT: "65535", TELEMETRY_HOST: " 0.0.0.0 ", TELEMETRY_ID: "  primary-keeper  " },
     argv: []
   });
 
   assert.equal(configured.telemetryPort, 65535);
+  assert.equal(configured.telemetryHost, "0.0.0.0");
   assert.equal(configured.telemetryId, "primary-keeper");
   assert.throws(
     () => loadConfig({ env: { TELEMETRY_PORT: "-1" }, argv: [] }),

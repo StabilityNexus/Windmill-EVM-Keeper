@@ -128,3 +128,16 @@ test("logStartup fails on chain-id mismatch", async () => {
 
   await assert.rejects(() => runner.logStartup(), /Chain ID mismatch/);
 });
+
+test("getStatus reports an unhealthy cycle when every work item fails", async () => {
+  const strategy = {
+    name: "failure-status-test", requiresSigner: false, requiresContract: false, abi: [],
+    async getWorkItems() { return [{ id: 1 }]; },
+    async executeWorkItem() { throw new Error("execution failed"); }
+  };
+  const runner = new KeeperRunner({ config: createBaseConfig(), provider: createProvider(), signer: null, contract: null, strategy, logger: createLogger() });
+
+  await runner.runCycle();
+  assert.equal(runner.getStatus().isHealthy, false);
+  assert.equal(runner.getStatus().lastCycle.failed, 1);
+});
