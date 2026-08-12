@@ -1,4 +1,3 @@
-import process from "node:process";
 import { setTimeout as sleep } from "node:timers/promises";
 
 /**
@@ -69,19 +68,21 @@ export class KeeperRunner {
     this.logger = logger;
 
     this.stopped = false;
-    this.signalHandlersInstalled = false;
     this.consecutiveFailures = 0;
+    this.startedAt = null;
+    this.chainId = null;
+    this.lastCycle = null;
+    this.lastError = null;
   }
 
   async start() {
+    this.startedAt = new Date().toISOString();
     await this.logStartup();
 
     if (this.config.once) {
       await this.runCycle();
       return;
     }
-
-    this.installSignalHandlers();
 
     while (!this.stopped) {
       const cycleStart = Date.now();
@@ -90,6 +91,7 @@ export class KeeperRunner {
         this.consecutiveFailures = 0;
       } catch (error) {
         this.consecutiveFailures += 1;
+        this.lastError = formatError(error);
         this.logger.error("Keeper cycle failed", {
           consecutiveFailures: this.consecutiveFailures,
           error: formatError(error)
@@ -115,6 +117,7 @@ export class KeeperRunner {
 
     const network = await this.provider.getNetwork();
     const chainId = BigInt(network.chainId);
+    this.chainId = chainId.toString();
     this.logger.info("Connected network", { chainId: chainId.toString() });
 
     if (
@@ -154,6 +157,7 @@ export class KeeperRunner {
 
     if (workItems.length === 0) {
       this.logger.info("No actionable items found");
+      this.recordCycle({ discovered: 0, processed: 0, succeeded: 0, failed: 0, skipped: 0, cycleStartedAt });
       return;
     }
 
@@ -207,6 +211,7 @@ export class KeeperRunner {
         succeeded += 1;
       } catch (error) {
         failed += 1;
+        this.lastError = formatError(error);
         this.logger.warn("Work item execution failed", {
           item: itemLabel,
           error: formatError(error)
@@ -222,6 +227,46 @@ export class KeeperRunner {
       skipped,
       elapsedMs: Date.now() - cycleStartedAt
     });
+    this.recordCycle({ discovered: workItems.length, processed: selectedItems.length, succeeded, failed, skipped, cycleStartedAt });
+  }
+
+  recordCycle({ discovered, processed, succeeded, failed, skipped, cycleStartedAt }) {
+    this.lastCycle = {
+      discovered,
+      processed,
+      succeeded,
+      failed,
+      skipped,
+      elapsedMs: Date.now() - cycleStartedAt,
+      completedAt: new Date().toISOString()
+    };
+    if (failed === 0) {
+      this.lastError = null;
+    }
+  }
+
+  getStatus() {
+    const hasCompleteWorkItemFailure =
+      this.lastCycle !== null &&
+      this.lastCycle.processed > 0 &&
+      this.lastCycle.succeeded === 0 &&
+      this.lastCycle.failed > 0;
+    const uptimeSeconds = this.startedAt
+      ? Math.floor((Date.now() - Date.parse(this.startedAt)) / 1000)
+      : 0;
+
+    return {
+      id: this.config.telemetryId || this.signer?.address || "keeper",
+      address: this.signer?.address ?? null,
+      chainId: this.chainId,
+      startedAt: this.startedAt,
+      stopped: this.stopped,
+      uptimeSeconds,
+      isHealthy: !this.stopped && this.consecutiveFailures < 3 && !hasCompleteWorkItemFailure,
+      consecutiveFailures: this.consecutiveFailures,
+      lastError: this.lastError,
+      lastCycle: this.lastCycle
+    };
   }
 
   stop(reason = "manual") {
@@ -233,13 +278,4 @@ export class KeeperRunner {
     this.logger.warn("Stopping keeper", { reason });
   }
 
-  installSignalHandlers() {
-    if (this.signalHandlersInstalled) {
-      return;
-    }
-
-    this.signalHandlersInstalled = true;
-    process.on("SIGINT", () => this.stop("SIGINT"));
-    process.on("SIGTERM", () => this.stop("SIGTERM"));
-  }
 }
