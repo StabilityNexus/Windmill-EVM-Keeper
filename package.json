@@ -1,5 +1,5 @@
 {
-  "name": "evm-keeper-template",
+  "name": "windmill-evm-keeper",
   "version": "1.0.0",
   "private": true,
   "type": "module",
