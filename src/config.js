@@ -83,6 +83,25 @@ export function parseInteger(value, fallback, { min, max, variable }) {
 }
 
 /**
+ * @param {unknown} value
+ * @returns {number}
+ */
+export function parseDeployBlock(value) {
+  if (value === undefined || value === null || value === "") {
+    return 0;
+  }
+
+  const raw = String(value).trim();
+  const parsed = /^\d+$/.test(raw) ? Number(raw) : NaN;
+
+  if (!Number.isSafeInteger(parsed)) {
+    throw new Error(`Invalid DEPLOY_BLOCK: "${value}". Must be a valid non-negative block number.`);
+  }
+
+  return parsed;
+}
+
+/**
  * @param {string | undefined | null} value
  * @returns {bigint | null}
  */

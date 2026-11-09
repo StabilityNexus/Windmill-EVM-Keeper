@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { loadConfig, parseBoolean } from "../src/config.js";
+import { loadConfig, parseBoolean, parseDeployBlock } from "../src/config.js";
 
 test("parseBoolean handles true and false values", () => {
   assert.equal(parseBoolean("true", false), true);
@@ -9,6 +9,14 @@ test("parseBoolean handles true and false values", () => {
 
 test("parseBoolean throws on invalid value", () => {
   assert.throws(() => parseBoolean("sometimes", true), /Invalid boolean value/);
+});
+
+test("parseDeployBlock validates block numbers", () => {
+  assert.equal(parseDeployBlock(undefined), 0);
+  assert.equal(parseDeployBlock(""), 0);
+  assert.equal(parseDeployBlock(" 456 "), 456);
+  assert.throws(() => parseDeployBlock("12abc"), /Invalid DEPLOY_BLOCK/);
+  assert.throws(() => parseDeployBlock("9007199254740993"), /Invalid DEPLOY_BLOCK/);
 });
 
 test("loadConfig reads defaults", () => {

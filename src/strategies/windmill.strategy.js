@@ -1,4 +1,5 @@
 import { ethers } from "ethers";
+import { parseDeployBlock } from "../config.js";
 
 const WINDMILL_EXCHANGE_ABI = [
   "function paused() view returns (bool)",
@@ -59,16 +60,10 @@ export function createWindmillStrategy() {
         return [];
       }
 
+      const deployBlock = parseDeployBlock(process.env.DEPLOY_BLOCK);
+
       // Discover pairs from events safely
       try {
-        let deployBlock = 0;
-        if (process.env.DEPLOY_BLOCK !== undefined && process.env.DEPLOY_BLOCK !== "") {
-          const deployBlockStr = process.env.DEPLOY_BLOCK.trim();
-          if (/^\d+$/.test(deployBlockStr)) {
-            deployBlock = parseInt(deployBlockStr, 10);
-          }
-        }
-
         const currentBlock = await provider.getBlockNumber();
         const startBlock = lastScannedBlock !== null ? lastScannedBlock + 1 : deployBlock;
 
