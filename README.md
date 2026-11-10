@@ -65,7 +65,7 @@ Copy `.env.example` to `.env` in the root of `Windmill-EVM-Keeper2`:
 KEEPER_STRATEGY=windmill
 EXPECTED_CHAIN_ID=11155111
 RPC_URL=https://ethereum-sepolia-rpc.publicnode.com
-PRIVATE_KEY=0x0000000000000000000000000000000000000000000000000000000000000001
+PRIVATE_KEY=0xYOUR_PRIVATE_KEY_HERE
 CONTRACT_ADDRESS=0x96dce657ba9bd3db2533bbee0b2e2dbf334232d2
 TX_CONFIRMATIONS=1
 MAX_ACTIONS_PER_CYCLE=25
@@ -74,6 +74,8 @@ DRY_RUN=false
 LOG_LEVEL=info
 DEPLOY_BLOCK=11466622
 ```
+
+`RPC_URL`, `PRIVATE_KEY`, and `CONTRACT_ADDRESS` are required. `PRIVATE_KEY` must be `0x` followed by exactly 64 hexadecimal characters. The launcher exits before startup when a required value is missing or invalid. `.env` contains secrets — never commit it.
 
 ---
 

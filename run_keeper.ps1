@@ -32,22 +32,52 @@ if (-not (Test-Path $NodeModules)) {
 }
 
 # 3. Check config variables
-$EnvContent = Get-Content $EnvFile
-$HasPk = $EnvContent | Select-String -Pattern "PRIVATE_KEY=0x"
-$HasContract = $EnvContent | Select-String -Pattern "CONTRACT_ADDRESS=0x"
+$EnvContent = @(Get-Content $EnvFile)
 
-if (-not $HasPk -or -not $HasContract) {
-    Write-Host "[3/3] CONFIGURATION REQUIREMENT ALERT:" -ForegroundColor Red
-    Write-Host "Please edit this file: $EnvFile" -ForegroundColor Yellow
-    Write-Host "Ensure the following values are set:" -ForegroundColor Yellow
-    Write-Host "  - RPC_URL= (E.g. your Sepolia/Base RPC)" -ForegroundColor Yellow
-    Write-Host "  - PRIVATE_KEY= (Your keeper wallet private key starting with 0x)" -ForegroundColor Yellow
-    Write-Host "  - CONTRACT_ADDRESS= (The deployed WindmillExchange address)" -ForegroundColor Yellow
-    Write-Host "================================================================" -ForegroundColor Yellow
-    Read-Host "Press ENTER to continue or exit and run again once configured"
-} else {
-    Write-Host "[3/3] Config variables are configured." -ForegroundColor Green
+function Get-EnvValue {
+    param(
+        [string]$Name,
+        [string[]]$Lines
+    )
+
+    foreach ($Line in $Lines) {
+        if ($Line -match "^\s*$Name\s*=\s*(.*)$") {
+            return $Matches[1].Trim()
+        }
+    }
+
+    return ""
 }
+
+$RpcUrl = Get-EnvValue -Name "RPC_URL" -Lines $EnvContent
+$PrivateKey = Get-EnvValue -Name "PRIVATE_KEY" -Lines $EnvContent
+$ContractAddress = Get-EnvValue -Name "CONTRACT_ADDRESS" -Lines $EnvContent
+
+$ConfigErrors = @()
+
+if ([string]::IsNullOrWhiteSpace($RpcUrl)) {
+    $ConfigErrors += "RPC_URL is missing."
+}
+
+if ($PrivateKey -notmatch '^0x[0-9a-fA-F]{64}$') {
+    $ConfigErrors += "PRIVATE_KEY must be 0x followed by exactly 64 hexadecimal characters."
+}
+
+if ([string]::IsNullOrWhiteSpace($ContractAddress)) {
+    $ConfigErrors += "CONTRACT_ADDRESS is missing."
+}
+
+if ($ConfigErrors.Count -gt 0) {
+    Write-Host "[3/3] Invalid keeper configuration:" -ForegroundColor Red
+    foreach ($ConfigError in $ConfigErrors) {
+        Write-Host "  - $ConfigError" -ForegroundColor Yellow
+    }
+    Write-Host "Edit $EnvFile and run the keeper again." -ForegroundColor Yellow
+    Write-Host "================================================================" -ForegroundColor Yellow
+    exit 1
+}
+
+Write-Host "[3/3] Config variables are valid." -ForegroundColor Green
 
 # 4. Launch Keeper
 Write-Host "Starting the keeper runner loop..." -ForegroundColor Yellow
