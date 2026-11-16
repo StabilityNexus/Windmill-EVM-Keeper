@@ -34,15 +34,181 @@ function getPairKey(tokenA, tokenB) {
   return `${t0.toLowerCase()}-${t1.toLowerCase()}`;
 }
 
+/**
+ * Waits for transaction receipt with bounded timeout and abort signal
+ * to prevent hanging listeners or blocking shutdown.
+ *
+ * @param {{
+ *   tx: any;
+ *   activeProvider: any;
+ *   signal?: AbortSignal;
+ *   pollIntervalMs: number;
+ * }} params
+ */
+async function waitForReceiptOrPoll({ tx, activeProvider, signal, pollIntervalMs }) {
+  if (signal?.aborted) return null;
+
+  // Direct check first via getTransactionReceipt (does not retain persistent event listeners)
+  if (activeProvider && tx?.hash) {
+    try {
+      const receipt = await activeProvider.getTransactionReceipt(tx.hash);
+      if (receipt) return receipt;
+    } catch {
+      // ignore transient error
+    }
+  }
+
+  // If tx.wait is available, bound it by pollIntervalMs and abort signal
+  if (typeof tx.wait === "function") {
+    let timeoutId;
+    let abortListener;
+
+    const timeoutPromise = new Promise((resolve) => {
+      timeoutId = setTimeout(() => resolve(null), pollIntervalMs);
+    });
+
+    const abortPromise = new Promise((resolve) => {
+      if (signal?.aborted) {
+        resolve(null);
+        return;
+      }
+      abortListener = () => resolve(null);
+      signal?.addEventListener("abort", abortListener, { once: true });
+    });
+
+    try {
+      const waitPromise = tx.wait(1, pollIntervalMs);
+      waitPromise?.catch?.(() => {});
+
+      return await Promise.race([
+        waitPromise,
+        timeoutPromise,
+        abortPromise
+      ]);
+    } catch (err) {
+      if (err?.code === "TIMEOUT" || err?.message?.toLowerCase().includes("timeout")) {
+        return null;
+      }
+      throw err;
+    } finally {
+      clearTimeout(timeoutId);
+      if (signal && abortListener) {
+        signal.removeEventListener("abort", abortListener);
+      }
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Monitors a submitted transaction until a terminal state (mined or reverted)
+ * is verified, retaining reservations on transient/nonterminal RPC errors
+ * and supporting clean cancellation during shutdown.
+ *
+ * @param {{
+ *   tx: any;
+ *   buyIdStr: string;
+ *   sellIdStr: string;
+ *   provider: any;
+ *   logger: any;
+ *   pendingOrderIds: Set<string>;
+ *   signal?: AbortSignal;
+ *   maxAttempts?: number;
+ *   pollIntervalMs?: number;
+ * }} params
+ */
+async function monitorPendingMatch({
+  tx,
+  buyIdStr,
+  sellIdStr,
+  provider,
+  logger,
+  pendingOrderIds,
+  signal,
+  maxAttempts = 15,
+  pollIntervalMs = 2000
+}) {
+  const activeProvider = provider ?? tx?.provider;
+  let settled = false;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    if (signal?.aborted) {
+      return;
+    }
+
+    try {
+      const receipt = await waitForReceiptOrPoll({
+        tx,
+        activeProvider,
+        signal,
+        pollIntervalMs
+      });
+      if (receipt) {
+        settled = true;
+        break;
+      }
+    } catch (err) {
+      if (signal?.aborted) {
+        return;
+      }
+      // In ethers, an on-chain transaction revert includes err.receipt (terminal state)
+      if (err?.receipt) {
+        logger.debug?.(
+          `Match tx ${tx?.hash} reverted on-chain at block ${err.receipt.blockNumber ?? "unknown"}`
+        );
+        settled = true;
+        break;
+      }
+
+      // Nonterminal error (e.g., transient RPC timeout / HTTP 502 / network disconnect)
+      logger.debug?.(
+        `Transient error polling receipt for tx ${tx?.hash} (attempt ${attempt}/${maxAttempts}): ${err?.message || err}`
+      );
+    }
+
+    if (attempt < maxAttempts && !settled) {
+      if (signal?.aborted) {
+        return;
+      }
+      await new Promise((resolve) => {
+        let timeoutId;
+        const onAbort = () => {
+          clearTimeout(timeoutId);
+          resolve();
+        };
+        timeoutId = setTimeout(() => {
+          signal?.removeEventListener("abort", onAbort);
+          resolve();
+        }, pollIntervalMs);
+        signal?.addEventListener("abort", onAbort, { once: true });
+      });
+    }
+  }
+
+  // Clear reservations only after establishing terminal state (or giving up after max attempts when not shutting down)
+  if (settled || !signal?.aborted) {
+    pendingOrderIds.delete(buyIdStr);
+    pendingOrderIds.delete(sellIdStr);
+  }
+}
+
 export function createWindmillStrategy() {
   /** @type {number | null} */
   let lastScannedBlock = null;
+  /** @type {Set<string>} */
+  const pendingOrderIds = new Set();
+  const abortController = new AbortController();
 
   return {
     name: "windmill",
     requiresSigner: true,
     requiresContract: true,
     abi: WINDMILL_EXCHANGE_ABI,
+
+    stop() {
+      abortController.abort();
+    },
 
     /**
      * @param {{
@@ -60,14 +226,16 @@ export function createWindmillStrategy() {
       }
 
       // Discover pairs from events safely
-      try {
-        let deployBlock = 0;
-        if (process.env.DEPLOY_BLOCK !== undefined && process.env.DEPLOY_BLOCK !== "") {
-          const deployBlockStr = process.env.DEPLOY_BLOCK.trim();
-          if (/^\d+$/.test(deployBlockStr)) {
-            deployBlock = parseInt(deployBlockStr, 10);
-          }
+      let deployBlock = 0;
+      if (process.env.DEPLOY_BLOCK !== undefined && process.env.DEPLOY_BLOCK !== "") {
+        const deployBlockStr = process.env.DEPLOY_BLOCK.trim();
+        if (!/^\d+$/.test(deployBlockStr)) {
+          throw new Error(`Invalid DEPLOY_BLOCK: "${process.env.DEPLOY_BLOCK}". Must be a valid non-negative block number.`);
         }
+        deployBlock = parseInt(deployBlockStr, 10);
+      }
+
+      try {
 
         const currentBlock = await provider.getBlockNumber();
         const startBlock = lastScannedBlock !== null ? lastScannedBlock + 1 : deployBlock;
@@ -117,6 +285,11 @@ export function createWindmillStrategy() {
           // Fetch full order data and check expiration
           const eligibleOrders = [];
           for (const id of orderIds) {
+            const idStr = id.toString();
+            if (pendingOrderIds.has(idStr)) {
+              logger.debug(`Order ${idStr} is pending settlement, skipping`);
+              continue;
+            }
             try {
               const order = await contract.getOrder(id);
               if (!order.active) {
@@ -204,45 +377,46 @@ export function createWindmillStrategy() {
      *   item: any;
      *   contract: any;
      *   logger: any;
+     *   provider?: any;
+     *   pollIntervalMs?: number;
+     *   maxAttempts?: number;
      * }} params
      */
-    async executeWorkItem({ item, contract, logger }) {
+    async executeWorkItem({
+      item,
+      contract,
+      logger,
+      provider,
+      pollIntervalMs = 2000,
+      maxAttempts = 10
+    }) {
       const deadline = Math.floor(Date.now() / 1000) + 60;
-      logger.info(`Executing match: buyId=${item.buy.id.toString()}, sellId=${item.sell.id.toString()}`);
+      const buyIdStr = item.buy.id.toString();
+      const sellIdStr = item.sell.id.toString();
+      logger.info(`Executing match: buyId=${buyIdStr}, sellId=${sellIdStr}`);
       const tx = await contract.matchOrders(item.buy.id, item.sell.id, deadline);
-      const receipt = await tx.wait();
-      
-      const banner = `
-/********************************================================================****************\\
-// ******************************************************************************************** //
-// *                                                                                          * //
-// *   🎉 🎉 🎉  ON-CHAIN TRADE MATCH & SETTLEMENT SUCCESSFUL!  🎉 🎉 🎉                       * //
-// *                                                                                          * //
-// ******************************************************************************************** //
-// *                                                                                          * //
-// *  📜 TRANSACTION DETAILS:                                                                  * //
-// *  --------------------------------------------------------------------------------------  * //
-// *  • Transaction Hash : ${receipt.hash || tx.hash}
-// *  • Settlement Status: ${receipt.status} (SUCCESS / CONFIRMED ON-CHAIN)                      * //
-// *  • Network & Chain   : Local Anvil EVM (Chain ID: 31337)                                  * //
-// *  • Exchange Contract: ${contract.target || contract.address}                            * //
-// *                                                                                          * //
-// *  --------------------------------------------------------------------------------------  * //
-// *  🛍️ BUY ORDER (#${item.buy.id.toString()}):                                                                      * //
-// *  • Trader Account   : ${item.buy.maker} (Trader 1 - Buyer)        * //
-// *  • Offered Asset    : ${ethers.formatEther(item.buy.remainingIn)} WETH                                                             * //
-// *  • Execution Price  : $${(Number(item.buy.price) / 1e27).toFixed(2)} / WETH                                                       * //
-// *                                                                                          * //
-// *  --------------------------------------------------------------------------------------  * //
-// *  🏷️ SELL ORDER (#${item.sell.id.toString()}):                                                                     * //
-// *  • Trader Account   : ${item.sell.maker} (Trader 2 - Seller)       * //
-// *  • Offered Asset    : ${ethers.formatUnits(item.sell.remainingIn, 6)} USDC                                                          * //
-// *  • Execution Price  : $${(Number(item.sell.price) / 1e27).toFixed(2)} / WETH                                                       * //
-// *  • Order State      : FILLED & SETTLED (Deactivated on-chain)                            * //
-// *                                                                                          * //
-// ******************************************************************************************** //
-\\********************************================================================****************/`;
-      console.log(banner);
+
+      pendingOrderIds.add(buyIdStr);
+      pendingOrderIds.add(sellIdStr);
+
+      if (tx && (typeof tx.wait === "function" || tx.hash)) {
+        monitorPendingMatch({
+          tx,
+          buyIdStr,
+          sellIdStr,
+          provider: provider ?? contract?.runner?.provider,
+          logger,
+          pendingOrderIds,
+          signal: abortController.signal,
+          pollIntervalMs,
+          maxAttempts
+        }).catch((err) => {
+          logger.debug?.(`Unexpected error in monitorPendingMatch: ${err?.message || err}`);
+          pendingOrderIds.delete(buyIdStr);
+          pendingOrderIds.delete(sellIdStr);
+        });
+      }
+
       return tx;
     },
 

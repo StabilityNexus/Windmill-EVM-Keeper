@@ -282,6 +282,13 @@ export class KeeperRunner {
 
     this.stopped = true;
     this.logger.warn("Stopping keeper", { reason });
+    if (typeof this.strategy?.stop === "function") {
+      try {
+        this.strategy.stop();
+      } catch (err) {
+        this.logger.debug?.("Error stopping strategy", err);
+      }
+    }
   }
 
 }

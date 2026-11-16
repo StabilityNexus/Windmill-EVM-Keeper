@@ -3,6 +3,7 @@ import { ethers } from "ethers";
 import { loadConfig } from "./config.js";
 import { KeeperRunner } from "./keeper-runner.js";
 import { createLogger } from "./logger.js";
+import { RecoverableNonceManager } from "./nonce-manager.js";
 import { createStrategy } from "./strategies/index.js";
 import { startTelemetryServer, stopTelemetryServer } from "./telemetry-server.js";
 
@@ -45,9 +46,10 @@ async function main() {
   }
 
   const provider = new ethers.JsonRpcProvider(config.rpcUrl);
-  const signer = config.privateKey
+  const baseSigner = config.privateKey
     ? new ethers.Wallet(config.privateKey, provider)
     : null;
+  const signer = baseSigner ? new RecoverableNonceManager(baseSigner) : null;
   const contract = buildContract({ strategy, config, provider, signer });
 
   const runner = new KeeperRunner({
@@ -68,6 +70,13 @@ async function main() {
   const shutdown = (signal) => {
     runner.stop(signal);
     stopTelemetryServer(telemetryServer, logger);
+    if (typeof provider?.destroy === "function") {
+      try {
+        provider.destroy();
+      } catch (err) {
+        logger.debug?.("Error destroying provider during shutdown", err);
+      }
+    }
   };
   process.once("SIGINT", () => shutdown("SIGINT"));
   process.once("SIGTERM", () => shutdown("SIGTERM"));
